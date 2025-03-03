@@ -1,0 +1,35 @@
+# Model architecture
+d_model: 256
+n_head: 8
+n_layers: 6
+d_ff: 1024
+dropout: 0.1
+
+# Training parameters
+batch_size: 64
+learning_rate: 1.0e-4
+num_epochs: 25
+weight_decay: 1.0e-6
+scheduler_type: cosine
+warmup_steps: 1000
+checkpoint_freq: 10
+num_output_figs: 1
+validation_freq: 5  # Validate every epoch
+test_freq: 100      # Test every 5 epochs
+viz_freq: 100       # Visualize every 5 epochs
+
+# Data parameters
+data_path: data
+num_workers: 1
+scaler_fname: 'airfoil_scaler.pt'
+
+# Experiment tracking
+project_name: airfoil-transfer-learning
+experiment_name: baseline_transformer
+tags: 
+  - transformer
+  - baseline
+  - pressure_prediction
+
+# Wandb settings
+notes: "Baseline transformer model for transfer learning of 2D to 3D airfoil pressure prediction"
