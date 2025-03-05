@@ -1,0 +1,100 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyTorch
+*.pth
+*.pt
+*.pkl
+model_checkpoints/
+runs/
+tensorboard/
+lightning_logs/
+airfoil_scaler.pt
+
+# Data and Results
+data/
+data_cv_splits/
+results/
+outputs/
+logs/
+experiments/*/logs/
+experiments/*/models/
+experiments/*/visualizations/
+*.csv
+*.h5
+*.npz
+*.npy
+model_test/
+
+# Visualization outputs
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.pdf
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+.python-version
+.env.local
+.env.*.local
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Experiment tracking
+wandb/
+mlruns/
+
+# Exception cases - files to keep despite being in ignored directories
+!data/.gitkeep
+!results/.gitkeep
+!outputs/.gitkeep
+!model_checkpoints/.gitkeep
+
+# Custom project files to keep
+# Add specific files you want to keep here, for example:
+# !data/README.md
