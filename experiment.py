@@ -7,7 +7,6 @@ from datetime import datetime
 import json
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-import wandb
 
 class ExperimentManager:
     def __init__(self, config):
@@ -18,9 +17,9 @@ class ExperimentManager:
     def setup_directories(self):
         """Create experiment directory structure"""
         if self.config.enable_transfer_learning:
-            self.exp_dir = Path(f"experiments/{self.config.experiment_name}_{self.config.data_path}_tl_enabled_{self.timestamp}")
+            self.exp_dir = Path(f"../experiments/{self.config.experiment_name}_{self.config.data_path}_tl_enabled_{self.timestamp}")
         elif not self.config.enable_transfer_learning:
-            self.exp_dir = Path(f"experiments/{self.config.experiment_name}_{self.config.data_path}_tl_disabled_{self.timestamp}")
+            self.exp_dir = Path(f"../experiments/{self.config.experiment_name}_{self.config.data_path}_tl_disabled_{self.timestamp}")
         else:
             sys.exit('Must explicitly define TL presence')
         self.model_dir = self.exp_dir / "models"
@@ -34,24 +33,9 @@ class ExperimentManager:
         # Save configuration
         self.config.save(self.exp_dir / "config.yaml")
         
-    def setup_wandb(self):
-        """Initialize W&B project"""
-        import wandb
-        self.run = wandb.init(
-            project=self.config.project_name,
-            name=f"{self.config.experiment_name}_{self.timestamp}",
-            config=asdict(self.config),
-            tags=self.config.tags
-        )
-        
-    def log_batch_metrics(self, metrics, step):
-        """Log training metrics for each batch"""
-        wandb.log(metrics, step=step)
-        
     def log_epoch_metrics(self, metrics, step):
         """Log metrics for each epoch"""
         metrics['step'] = step
-        wandb.log(metrics)
         
         # Save metrics to local file
         metrics_file = self.log_dir / "metrics.jsonl"
@@ -66,13 +50,6 @@ class ExperimentManager:
                 # Get predictions (using your existing visualization code)
                 fig = self.create_prediction_visualization(model, split, batch, device, scaler, epoch, batch_idx)
                 
-                # Log to W&B
-                #wandb.log({
-                #    "predictions": wandb.Image(fig),
-                #    "epoch": epoch,
-                #    "batch": batch_idx,
-                #    "step": global_step
-                #})
             
     def create_prediction_visualization(self, model, split, batch, device, scaler, epoch, batch_idx):
         """Create visualization of model predictions"""
@@ -117,16 +94,6 @@ class ExperimentManager:
                 'mach': mach,
                 'reynolds': reynolds
             }
-
-            # Report unscaled Reynolds number
-            #true_reynolds = batch['reynolds'] * scaler.scalers['reynolds']['std'] + scaler.scalers['reynolds']['mean']
-            #print(batch['reynolds'][0].item()) 
-            #print(batch['reynolds'][0].item() * scaler.scalers['reynolds']['std'] + scaler.scalers['reynolds']['mean']) 
-            #print(scaler.scalers['reynolds']['std'])
-            #print(scaler.scalers['reynolds']['mean'])
-            #sys.exit('DEBUG')
-            #print(true_reynolds[0])
-            #print(f"Reynolds: {true_reynolds[0].item():.3e}")
             
             # Visualize random samples
             for i in range(len(batch)):
@@ -212,16 +179,3 @@ class ExperimentManager:
         # Save locally
         checkpoint_path = self.model_dir / f"checkpoint_epoch_{epoch}.pt"
         torch.save(checkpoint, checkpoint_path)
-        
-        # Log to W&B
-        artifact = wandb.Artifact(
-            name=f'model-checkpoint-{epoch}',
-            type='model',
-            metadata=metrics
-        )
-        artifact.add_file(str(checkpoint_path))
-        self.run.log_artifact(artifact)
-        
-    def finish(self):
-        """Cleanup and finish experiment tracking"""
-        wandb.finish()

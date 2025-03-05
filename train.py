@@ -1,17 +1,17 @@
 import torch
 from torch.utils.data import DataLoader
-from tl_model import AirfoilTransformerModel
-from tl_data import create_dataloaders, AirfoilDataScaler
+from model import AirfoilTransformerModel
+from data import create_dataloaders, AirfoilDataScaler
 from experiment import ExperimentManager
 from validation import ModelValidator, ValidationMetrics
 from config import TrainingConfig
 import logging
 from pathlib import Path
 from typing import Dict, Optional
-import wandb
 import argparse
 from datetime import datetime
 import logging
+import sys
 
 class ModelTrainer:
     def __init__(
@@ -35,7 +35,6 @@ class ModelTrainer:
         self.scaler = scaler
         self.experiment = experiment
         self.validator = validator
-        self.global_step = 0  # global steps for logging to wandb
         
         # Setup logging
         self.logger = logging.getLogger(__name__)
@@ -212,7 +211,6 @@ def train_model():
     experiment = ExperimentManager(config)
     experiment.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     experiment.setup_directories()
-    experiment.setup_wandb()
     
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -223,12 +221,12 @@ def train_model():
         batch_size=config.batch_size,
         num_workers=config.num_workers
     )
-    
-    sys.exit('DEBUG')
 
     # Initialize or load scaler
     scaler = AirfoilDataScaler()
     scaler.fit(dataloaders['train'])
+
+    sys.exit('DEBUG')
     
     # Initialize model and training components
     model = AirfoilTransformerModel(config).to(device)

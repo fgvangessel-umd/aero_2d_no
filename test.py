@@ -1,6 +1,6 @@
 import torch
-from tl_model import AirfoilTransformerModel
-from tl_data import create_dataloaders, AirfoilDataScaler
+from model import AirfoilTransformerModel
+from data import create_dataloaders, AirfoilDataScaler
 from experiment import ExperimentManager
 from tl_viz import plot_3d_wing_predictions
 from utils import load_checkpoint, calculate_airfoil_forces, select_case
