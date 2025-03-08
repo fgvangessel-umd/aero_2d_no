@@ -30,6 +30,9 @@ class TrainingConfig:
     test_freq: int = 10      # Test every 5 epochs
     viz_freq: int = 10      # Visualize every 5 epochs
     
+    # Hardware parameters
+    device: Optional[str] = None  # 'cuda', 'mps', 'cpu', or None for auto-detection
+    
     # Data parameters
     data_path: str = 'data'
     num_workers: int = 1
@@ -89,6 +92,11 @@ class TrainingConfig:
         parser.add_argument('--scheduler_type', type=str, help='Learning rate scheduler type')
         parser.add_argument('--warmup_steps', type=int, help='Warmup steps')
         parser.add_argument('--checkpoint_freq', type=int, help='Checkpoint frequency')
+        
+        # Hardware params
+        parser.add_argument('--device', type=str, 
+                           choices=['cuda', 'mps', 'cpu'], 
+                           help='Device to use (cuda, mps for Apple Silicon, or cpu)')
         
         # Data params
         parser.add_argument('--data_path', type=str, help='Path to data files')

@@ -45,7 +45,7 @@ def add_zcoord_colorbar(fig, ax, norm, cmap, label='Z-Coordinate'):
     cbar.set_label(label)
     return cbar
 
-def visualize_predictions(model, dataloader, scaler, device, num_samples=1, save_path='predictions'):
+def visualize_predictions(model, dataloader, scaler, device=None, num_samples=1, save_path='predictions'):
     """
     Visualize model predictions against ground truth
     
@@ -53,10 +53,19 @@ def visualize_predictions(model, dataloader, scaler, device, num_samples=1, save
         model: Trained AirfoilTransformerModel
         dataloader: DataLoader containing test data
         scaler: Fitted AirfoilDataScaler
-        device: torch device
+        device: torch device (if None, will select automatically)
         num_samples: Number of random samples to visualize
         save_path: Directory to save visualization plots
     """
+    # Set device if not provided - support CUDA, MPS (Apple Silicon), or CPU
+    if device is None:
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            device = torch.device('mps')
+        else:
+            device = torch.device('cpu')
+    
     model.eval()
     
     # Get a batch of data

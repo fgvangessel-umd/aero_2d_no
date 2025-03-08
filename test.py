@@ -26,8 +26,18 @@ if __name__ == "__main__":
     # Load configuration
     config = TrainingConfig.load(args.config)
     
-    # Set device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # Set device - support for CUDA, Apple Silicon (MPS), or CPU
+    if hasattr(config, 'device') and config.device:
+        device = torch.device(config.device)
+    else:
+        if torch.cuda.is_available():
+            device = torch.device('cuda')
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            device = torch.device('mps')
+        else:
+            device = torch.device('cpu')
+    
+    print(f"Using device: {device}")
     
     # Create dataloaders
     data_path = 'data/data_standard'

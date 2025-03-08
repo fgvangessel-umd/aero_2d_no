@@ -44,6 +44,15 @@ class ExperimentManager:
             
     def log_model_predictions(self, model, split, dataloader, device, epoch, scaler, global_step):
         """Generate and log model prediction visualizations"""
+        # Ensure device is set correctly if None is provided
+        if device is None:
+            if torch.cuda.is_available():
+                device = torch.device('cuda')
+            elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+                device = torch.device('mps')
+            else:
+                device = torch.device('cpu')
+                
         model.eval()
         with torch.no_grad():
             for batch_idx, batch in enumerate(dataloader):
