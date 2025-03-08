@@ -67,8 +67,8 @@ class AirfoilTransformerDecoder(nn.Module):
         reynolds,  # [batch_size]
     ):
         # Embed source (2D) features including pressure
-        geo_tgt_embedded = self.source_embedding(tgt_spline_features)
-        geo_mem_embedded = self.source_embedding(mem_spline_features)
+        geo_tgt_embedded = self.geo_embedding(tgt_spline_features)
+        geo_mem_embedded = self.geo_embedding(mem_spline_features)
 
         # Embed and add global features
         global_embedded = self.global_embedding(mach, reynolds)

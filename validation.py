@@ -19,8 +19,6 @@ class ValidationMetrics:
     max_error: float  # Maximum absolute error
     r2_score: float  # R-squared score
     pressure_correlation: float  # Correlation coefficient for pressure
-    section_wise_errors: Dict[str, float]  # Errors by wing section
-    spanwise_distribution: Dict[str, np.ndarray]  # Error distribution along span
 
 
 class ModelValidator:
@@ -30,7 +28,6 @@ class ModelValidator:
         criterion: torch.nn.Module,
         device: Optional[torch.device] = None,
         scaler: Optional[object] = None,
-        log_to_wandb: bool = True,
     ):
         """
         Initialize the model validator
@@ -40,7 +37,6 @@ class ModelValidator:
             criterion: Loss function
             device: Computation device (CPU/GPU/MPS). If None, will be auto-selected.
             scaler: Data scaler for normalization
-            log_to_wandb: Whether to log results to W&B
         """
         # Set device if not provided - support CUDA, MPS (Apple Silicon), or CPU
         if device is None:
@@ -55,36 +51,6 @@ class ModelValidator:
         self.criterion = criterion
         self.device = device
         self.scaler = scaler
-        self.log_to_wandb = log_to_wandb
-
-    def compute_section_metrics(
-        self,
-        pred_pressure: torch.Tensor,
-        true_pressure: torch.Tensor,
-        z_coordinates: torch.Tensor,
-    ) -> Dict[str, float]:
-        """
-        Compute error metrics for different wing sections
-
-        Args:
-            pred_pressure: Predicted pressure values
-            true_pressure: Ground truth pressure values
-            z_coordinates: Spanwise coordinates
-
-        Returns:
-            Dictionary of section-wise error metrics
-        """
-        unique_z = torch.unique(z_coordinates)
-        section_metrics = {}
-
-        for z in unique_z:
-            mask = z_coordinates == z
-            section_mse = torch.nn.functional.mse_loss(
-                pred_pressure[mask], true_pressure[mask]
-            ).item()
-            section_metrics[f"section_z_{z:.2f}_mse"] = section_mse
-
-        return section_metrics
 
     def analyze_spanwise_distribution(
         self,
@@ -136,30 +102,23 @@ class ModelValidator:
 
             # Move data to device
             airfoil_2d = batch["airfoil_2d"].to(self.device)
-            geometry_3d = batch["geometry_3d"].to(self.device)
-            pressure_3d = batch["pressure_3d"].to(self.device)
             mach = batch["mach"].to(self.device)
             reynolds = batch["reynolds"].to(self.device)
-            z_coord = batch["z_coord"].to(self.device)
+            geo_2d = airfoil_2d[:, :, :3]
+            pressure_2d = airfoil_2d[:, :, 3].unsqueeze(-1)
 
             # Forward pass
-            predictions = self.model(airfoil_2d, geometry_3d, mach, reynolds, z_coord)
+            predictions = self.model(geo_2d, mach, reynolds)
 
             # Compute basic metrics
-            loss = self.criterion(predictions, pressure_3d)
-            mae = torch.nn.functional.l1_loss(predictions, pressure_3d)
-            max_error = (predictions - pressure_3d).abs().max()
-
-            # Compute section-wise metrics
-            section_metrics = self.compute_section_metrics(
-                predictions, pressure_3d, z_coord
-            )
+            loss = self.criterion(predictions, pressure_2d)
+            mae = torch.nn.functional.l1_loss(predictions, pressure_2d)
+            max_error = (predictions - pressure_2d).abs().max()
 
             batch_metrics = {
                 "batch_loss": loss.item(),
                 "batch_mae": mae.item(),
                 "batch_max_error": max_error.item(),
-                **section_metrics,
             }
 
             # print(batch_metrics)
@@ -167,7 +126,7 @@ class ModelValidator:
             return predictions, batch_metrics
 
     def validate_dataset(
-        self, dataloader: DataLoader, global_step: int, validation_type: str = "val"
+        self, dataloader: DataLoader, validation_type: str = "val"
     ) -> ValidationMetrics:
         """
         Validate the entire dataset
@@ -187,10 +146,12 @@ class ModelValidator:
         for batch in dataloader:
             predictions, batch_metrics = self.validate_batch(batch)
 
+            airfoil_2d = batch["airfoil_2d"].to(self.device)
+            pressure_2d = airfoil_2d[:, :, 3].unsqueeze(-1)
+
             # Collect predictions and true values
             all_predictions.append(predictions)
-            all_true_values.append(batch["pressure_3d"].to(self.device))
-            all_z_coords.append(batch["z_coord"].to(self.device))
+            all_true_values.append(pressure_2d)
 
             # Accumulate metrics
             for key, value in batch_metrics.items():
@@ -201,7 +162,6 @@ class ModelValidator:
         # Concatenate all predictions and true values
         all_predictions = torch.cat(all_predictions)
         all_true_values = torch.cat(all_true_values)
-        all_z_coords = torch.cat(all_z_coords)
 
         # Compute aggregate metrics
         mse = torch.nn.functional.mse_loss(all_predictions, all_true_values).item()
@@ -221,16 +181,6 @@ class ModelValidator:
             all_predictions.cpu().numpy().flatten(),
         )[0, 1]
 
-        # Compute section-wise metrics
-        section_metrics = self.compute_section_metrics(
-            all_predictions, all_true_values, all_z_coords
-        )
-
-        # Analyze spanwise distribution
-        spanwise_dist = self.analyze_spanwise_distribution(
-            all_predictions, all_true_values, all_z_coords
-        )
-
         # Create ValidationMetrics object
         metrics = ValidationMetrics(
             mse=mse,
@@ -239,16 +189,15 @@ class ModelValidator:
             max_error=max_error,
             r2_score=r2,
             pressure_correlation=correlation,
-            section_wise_errors=section_metrics,
-            spanwise_distribution=spanwise_dist,
         )
 
         # Log to W&B if enabled
-        if self.log_to_wandb and global_step is not None:
-            self._log_to_wandb(metrics, global_step)
+        # if self.log_to_wandb and global_step is not None:
+        #    self._log_to_wandb(metrics, global_step)
 
         return metrics
 
+    '''
     def _log_to_wandb(self, metrics: ValidationMetrics, global_step: int):
         """Log validation metrics to W&B"""
         log_dict = {
@@ -283,7 +232,8 @@ class ModelValidator:
         log_dict["val/spanwise_distribution"] = wandb.Image(fig)
         plt.close(fig)
 
-        wandb.log(log_dict)
+        wandb.log(log_dict)'
+    '''
 
     def generate_validation_report(
         self, metrics: ValidationMetrics, save_path: Optional[str] = None

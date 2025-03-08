@@ -63,11 +63,11 @@ class ModelTrainer:
             mach = batch["mach"].to(self.device)
             reynolds = batch["reynolds"].to(self.device)
             geo_2d = airfoil_2d[:, :, :3]
-            pressure_2d = airfoil_2d[:, :, 3]
+            pressure_2d = airfoil_2d[:, :, 3].unsqueeze(-1)
 
             # Forward pass
             self.optimizer.zero_grad()
-            predictions = self.model(airfoil_2d, mach, reynolds)
+            predictions = self.model(geo_2d, mach, reynolds)
 
             # Compute loss and backward pass
             loss = self.criterion(predictions, pressure_2d)
@@ -84,16 +84,16 @@ class ModelTrainer:
                     f"Loss: {loss.item():.6f}"
                 )
 
-            # Log to W&B if experiment manager is available
-            if self.experiment:
-                self.experiment.log_batch_metrics(
-                    {
-                        "train/batch_loss": loss.item(),
-                        "train/learning_rate": self.optimizer.param_groups[0]["lr"],
-                    },
-                    self.global_step,
-                )
-                self.global_step += 1
+            # Log if experiment manager is available
+            # if self.experiment:
+            #    self.experiment.log_batch_metrics(
+            #        {
+            #            "train/batch_loss": loss.item(),
+            #            "train/learning_rate": self.optimizer.param_groups[0]["lr"],
+            #        },
+            #        self.global_step,
+            #    )
+            #    self.global_step += 1
 
         return total_loss / len(self.dataloaders["train"])
 
@@ -106,9 +106,7 @@ class ModelTrainer:
             return None
 
         self.logger.info(f"Running {validation_type} validation for epoch {epoch}")
-        return self.validator.validate_dataset(
-            self.dataloaders[validation_type], self.global_step
-        )
+        return self.validator.validate_dataset(self.dataloaders[validation_type])
 
     def train(self):
         """Main training loop"""
@@ -168,7 +166,7 @@ class ModelTrainer:
             # Log epoch metrics
             metrics.update({"train/loss": train_loss, "epoch": epoch})
             if self.experiment:
-                self.experiment.log_epoch_metrics(metrics, self.global_step)
+                self.experiment.log_epoch_metrics(metrics, epoch)
 
             # Regular model checkpoint
             if epoch % self.config.checkpoint_freq == 0 and self.experiment:
@@ -186,7 +184,6 @@ class ModelTrainer:
                     epoch,
                     # self.config.num_output_figs,
                     self.scaler,
-                    self.global_step,
                 )
 
         self.logger.info("Training completed")
@@ -244,7 +241,6 @@ def train_model():
         criterion=criterion,
         device=device,
         scaler=scaler,
-        log_to_wandb=True,
     )
 
     # Initialize trainer
@@ -273,12 +269,7 @@ def train_model():
                 device,
                 config.num_epochs,
                 scaler,
-                None,
             )
-
-    # Cleanup
-    if experiment:
-        experiment.finish()
 
 
 if __name__ == "__main__":
