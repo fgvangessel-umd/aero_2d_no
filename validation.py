@@ -104,8 +104,8 @@ class ModelValidator:
             airfoil_2d = batch["airfoil_2d"].to(self.device)
             mach = batch["mach"].to(self.device)
             reynolds = batch["reynolds"].to(self.device)
-            geo_2d = airfoil_2d[:, :, :3]
-            pressure_2d = airfoil_2d[:, :, 3].unsqueeze(-1)
+            geo_2d = airfoil_2d[:, :, :-1]
+            pressure_2d = airfoil_2d[:, :, -1].unsqueeze(-1)
 
             # Forward pass
             predictions = self.model(geo_2d, mach, reynolds)
@@ -147,7 +147,7 @@ class ModelValidator:
             predictions, batch_metrics = self.validate_batch(batch)
 
             airfoil_2d = batch["airfoil_2d"].to(self.device)
-            pressure_2d = airfoil_2d[:, :, 3].unsqueeze(-1)
+            pressure_2d = airfoil_2d[:, :, -1].unsqueeze(-1)
 
             # Collect predictions and true values
             all_predictions.append(predictions)

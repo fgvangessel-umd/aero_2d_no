@@ -62,8 +62,8 @@ class ModelTrainer:
             airfoil_2d = batch["airfoil_2d"].to(self.device)
             mach = batch["mach"].to(self.device)
             reynolds = batch["reynolds"].to(self.device)
-            geo_2d = airfoil_2d[:, :, :3]
-            pressure_2d = airfoil_2d[:, :, 3].unsqueeze(-1)
+            geo_2d = airfoil_2d[:, :, :-1]
+            pressure_2d = airfoil_2d[:, :, -1].unsqueeze(-1)
 
             # Forward pass
             self.optimizer.zero_grad()

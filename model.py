@@ -20,7 +20,7 @@ class SplineFeatureEmbedding(nn.Module):
 
     def __init__(self, d_model, include_pressure=True):
         super().__init__()
-        self.input_dim = 3  # 3 features: arc_length, x, y
+        self.input_dim = 2  # 2 features: x, y
         self.embedding = nn.Linear(self.input_dim, d_model)
 
     def forward(self, spline_features):
@@ -61,8 +61,8 @@ class AirfoilTransformerDecoder(nn.Module):
 
     def forward(
         self,
-        tgt_spline_features,  # [batch_size, seq_len, 3] - 2D airfoil
-        mem_spline_features,  # [batch_size, seq_len, 3] - 2D airfoil
+        tgt_spline_features,  # [batch_size, seq_len, 2] - 2D airfoil
+        mem_spline_features,  # [batch_size, seq_len, 2] - 2D airfoil
         mach,  # [batch_size]
         reynolds,  # [batch_size]
     ):
