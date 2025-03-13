@@ -17,16 +17,9 @@ class ExperimentManager:
 
     def setup_directories(self):
         """Create experiment directory structure"""
-        if self.config.enable_transfer_learning:
-            self.exp_dir = Path(
-                f"../experiments/{self.config.experiment_name}_{self.config.data_path}_tl_enabled_{self.timestamp}"
-            )
-        elif not self.config.enable_transfer_learning:
-            self.exp_dir = Path(
-                f"../experiments/{self.config.experiment_name}_{self.config.data_path}_tl_disabled_{self.timestamp}"
-            )
-        else:
-            sys.exit("Must explicitly define TL presence")
+        self.exp_dir = Path(
+            f"../experiments/{self.config.experiment_name}_{self.config.data_path}_{self.timestamp}"
+        )
         self.model_dir = self.exp_dir / "models"
         self.viz_dir = self.exp_dir / "visualizations"
         self.log_dir = self.exp_dir / "logs"
